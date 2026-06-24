@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+wajha_env/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables (Saves API keys and DB passwords securely)
+.env
+.env.*
+!.env.example
+
+# Databases (We do not commit local databases)
+*.sqlite3
+*.sqlite3-journal
+
+# Media / Uploaded files by students (CVs, profile pictures)
+wajha/media/
+media/
+
+# IDEs and Editors (VS Code, PyCharm, etc.)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS files
+Thumbs.db
+db.db
+Desktop.ini
+.DS_Store
