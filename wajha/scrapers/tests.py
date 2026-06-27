@@ -47,3 +47,46 @@ class ScraperTestCase(TestCase):
         self.assertEqual(scraped_obj.raw_title, 'Test Scholarship 2026')
         self.assertEqual(scraped_obj.status, 'pending')
 
+    def test_approve_grants_action(self):
+        from django.contrib.auth import get_user_model
+        from scrapers.admin import approve_grants
+        from grants.models import GrantOpportunity
+        from unittest.mock import Mock
+
+        User = get_user_model()
+        user = User.objects.create_user(username='testadmin', password='password123', is_staff=True)
+
+        source = GrantSource.objects.create(name='Test Source', url='https://test.com')
+        scraped = ScrapedGrant.objects.create(
+            source=source,
+            raw_title="Awesome Fellowship",
+            parsed_data={
+                "url": "https://test.com/awesome-fellowship",
+                "description": "This is an awesome fellowship opportunity.",
+                "deadline": "August 12, 2026",
+                "organization": "Test Org"
+            }
+        )
+
+        mock_request = Mock()
+        mock_request.user = user
+
+        mock_modeladmin = Mock()
+
+        # Call the action
+        approve_grants(mock_modeladmin, mock_request, ScrapedGrant.objects.all())
+
+        # Assert ScrapedGrant status is updated to approved
+        scraped.refresh_from_db()
+        self.assertEqual(scraped.status, 'approved')
+        self.assertEqual(scraped.reviewed_by, user)
+
+        # Assert GrantOpportunity is created
+        self.assertEqual(GrantOpportunity.objects.count(), 1)
+        grant = GrantOpportunity.objects.first()
+        self.assertEqual(grant.title, "Awesome Fellowship")
+        self.assertEqual(grant.source_url, "https://test.com/awesome-fellowship")
+        self.assertEqual(grant.status, 'draft')
+        self.assertEqual(grant.added_by, user)
+
+
