@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 
 class GrantSource(models.Model):
@@ -59,7 +59,7 @@ class ScrapedGrant(models.Model):
     status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     scraped_at      = models.DateTimeField(auto_now_add=True, db_column='scraped_at')
     reviewed_by     = models.ForeignKey(
-                          User,
+                          settings.AUTH_USER_MODEL,
                           on_delete=models.SET_NULL,
                           null=True, blank=True,
                           db_column='reviewed_by',
