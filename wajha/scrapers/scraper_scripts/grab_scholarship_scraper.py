@@ -40,6 +40,22 @@ SCHOLARSHIP_CATEGORY_KEYWORDS = (
     'fellowship',
 )
 
+EXCLUDED_TITLE_KEYWORDS = (
+    'عمل',
+    'وظائف',
+    'وظيفة',
+    'توظيف',
+    'تطوع',
+    'تطوعي',
+    'أفضل 10',
+    'افضل 10',
+    'أفضل',
+    'قائمة',
+    'راتب',
+    'رواتب',
+    'تصريح',
+)
+
 MONTHS = {
     'يناير': 1, 'كانون الثاني': 1, 'فبراير': 2, 'شباط': 2,
     'مارس': 3, 'آذار': 3, 'ابريل': 4, 'أبريل': 4, 'نيسان': 4,
@@ -56,8 +72,16 @@ MONTHS = {
     'december': 12, 'dec': 12,
 }
 
+# Matches the most common Arabic deadline label variants found on grabscholarship.com:
+#   آخر موعد للتقديم | الموعد النهائي | تاريخ انتهاء | موعد التقديم | الموعد الأخير
 DEADLINE_LABEL_RE = re.compile(
-    r'(?:آخر|اخر)\s+موعد(?:\s+(?:للتقديم|التقديم))?\s*[:：]?\s*.{0,120}',
+    r'(?:'
+    r'(?:آخر|اخر)\s+موعد(?:\s+(?:للتقديم|التقديم))?'
+    r'|الموعد\s+(?:النهائي|الأخير|الاخير)'
+    r'|تاريخ\s+(?:انتهاء|الانتهاء|التقديم|الانتهاء\s+من\s+التقديم)'
+    r'|موعد\s+(?:التقديم|الانتهاء)'
+    r'|نهاية\s+التقديم'
+    r')\s*[:：]?\s*.{0,120}',
     re.IGNORECASE,
 )
 ISO_DATE_RE = re.compile(r'(20\d{2})-(\d{1,2})-(\d{1,2})')
@@ -70,6 +94,14 @@ def _normalize_text(text: str) -> str:
 def _is_scholarship_category(category: str) -> bool:
     normalized = _normalize_text(category).lower()
     return any(keyword in normalized for keyword in SCHOLARSHIP_CATEGORY_KEYWORDS)
+
+def _has_excluded_keywords(title: str) -> bool:
+    normalized = _normalize_text(title).lower()
+    # Check exact word matches or clear substrings
+    for keyword in EXCLUDED_TITLE_KEYWORDS:
+        if keyword in normalized:
+            return True
+    return False
 
 
 def _parse_deadline_to_iso(text: str) -> str:
@@ -115,10 +147,26 @@ def _extract_deadline_from_html(html: str) -> str:
     soup = BeautifulSoup(html, 'html.parser')
     page_text = _normalize_text(' '.join(soup.stripped_strings))
 
+    # 1. Try labelled deadline phrases first (most reliable)
     for match in DEADLINE_LABEL_RE.finditer(page_text):
         deadline = _parse_deadline_to_iso(match.group(0))
         if deadline:
             return deadline
+
+    # 2. Fallback: scan all text for any standalone date pattern.
+    #    Useful when the site shows a date without a recognisable Arabic label.
+    month_names = '|'.join(re.escape(name) for name in sorted(MONTHS, key=len, reverse=True))
+    date_patterns = (
+        rf'(\d{{1,2}})\s+({month_names})\s+(20\d{{2}})',
+        rf'({month_names})\s+(\d{{1,2}}),?\s+(20\d{{2}})',
+        r'(20\d{2})-(\d{1,2})-(\d{1,2})',
+    )
+    for pattern in date_patterns:
+        match = re.search(pattern, page_text, re.IGNORECASE)
+        if match:
+            deadline = _parse_deadline_to_iso(match.group(0))
+            if deadline:
+                return deadline
 
     return ''
 
@@ -168,6 +216,12 @@ class GrabScholarshipScraper(BaseScraper):
                     continue
 
                 title = title_tag.get_text(strip=True)
+                
+                # Check for unwanted titles (jobs, volunteering, listicles)
+                if _has_excluded_keywords(title):
+                    logger.debug(f"[{self.source_name}] Skipped excluded title: {title}")
+                    continue
+
                 href = title_tag.get('href', '').strip()
                 if not href:
                     continue

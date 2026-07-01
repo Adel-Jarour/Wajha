@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scraped Queue — Wajha Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Toast notifications ── */
+  .toast-list {
+    position: fixed;
+    top: 72px;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+    animation: toastIn 0.3s ease;
+    min-width: 280px;
+    max-width: 420px;
+    transition: opacity 0.4s;
+  }
+  .toast.success { background: #10b981; color: #fff; }
+  .toast.info    { background: #3b82f6; color: #fff; }
+  .toast.warning { background: #f59e0b; color: #fff; }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── Pending badge on sidebar link ── */
+  .pending-badge {
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── Source chip ── */
+  .source-chip {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 8px;
+    background: var(--bg-soft, #f1f5f9);
+    color: var(--fg-dim, #64748b);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Dimmed reviewed rows ── */
+  tr.reviewed { opacity: 0.6; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Toast messages ── #}
+{% if messages %}
+<div class="toast-list" id="toastContainer">
+  {% for msg in messages %}
+  <div class="toast {{ msg.tags }}" role="alert">
+    <span>{{ msg }}</span>
+    <button onclick="this.parentElement.remove()"
+      style="margin-left:auto;background:none;border:none;color:inherit;cursor:pointer;font-size:1rem;">✕</button>
+  </div>
+  {% endfor %}
+</div>
+<script>
+  setTimeout(function () {
+    var c = document.getElementById('toastContainer');
+    if (c) { c.style.opacity = '0'; setTimeout(function(){ c && c.remove(); }, 400); }
+  }, 4000);
+</script>
+{% endif %}
+
+<div class="admin-shell">
+
+  <aside class="admin-side">
+    <div class="al">Admin</div>
+    <a href="{% url 'grants:admin_grants' %}" class="admin-link">Grants</a>
+    <a href="{% url 'scrapers:list' %}" class="admin-link active">Scraped Queue</a>
+    <a href="{% url 'admin_users' %}" class="admin-link">Users</a>
+    <a href="#" class="admin-link">Applications</a>
+  </aside>
+
+  <main class="admin-main">
+
+    <div class="admin-top">
+      <h2>
+        Scraped Queue
+        <span class="count">{{ pending_count }} pending / {{ total_count }} total</span>
+      </h2>
+      <div class="admin-search" style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <form method="get" style="display:flex; gap:0.5rem; align-items:center; width:100%;">
+          <input type="text" name="q" placeholder="Search title…" value="{{ query }}" style="flex:1; background:var(--surface); color:var(--fg); border:1px solid var(--line);">
+          
+          <select name="status" onchange="this.form.submit()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--fg);">
+            <option value="default" {% if status_filter == 'default' %}selected{% endif %}>Pending & Rejected</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Only</option>
+            <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected Only</option>
+            <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved Only</option>
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Grants</option>
+          </select>
+
+          <select name="source" onchange="this.form.submit()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--fg);">
+            <option value="">All Sources</option>
+            {% for src in sources %}
+              <option value="{{ src.id }}" {% if source_filter|add:"0" == src.id %}selected{% endif %}>{{ src.name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+      <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Source</th>
+          <th>Deadline</th>
+          <th>Scraped At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in page_obj %}
+        <tr>
+
+          {# Title + external link icon #}
+          <td style="max-width:280px;">
+            <a href="{% url 'scrapers:detail' item.pk %}"
+               style="text-decoration:none; color:var(--fg); font-weight:600;">
+              {{ item.raw_title|truncatechars:60 }}
+            </a>
+            {% with url=item.parsed_data.url %}
+            {% if url %}
+              <a href="{{ url }}" target="_blank" rel="noopener"
+                 title="Open original source"
+                 style="margin-left:4px; font-size:0.75rem; color:var(--muted, #64748b);">↗</a>
+            {% endif %}
+            {% endwith %}
+          </td>
+
+          {# Source website chip #}
+          <td>
+            {% if item.source %}
+              <span class="source-chip" title="{{ item.source.url }}">{{ item.source.name }}</span>
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+
+          {# Deadline from parsed_data #}
+          <td>{{ item.parsed_data.deadline|default:"—" }}</td>
+
+          {# Scraped At #}
+          <td style="white-space:nowrap; font-size:0.8rem; color:var(--muted);">
+            {{ item.scraped_at|date:"d M Y" }}
+          </td>
+
+          {# Actions — same button style as Grants tab #}
+          <td class="admin-table-row-actions">
+            <a href="{% url 'scrapers:detail' item.pk %}">
+              <button type="button">View</button>
+            </a>
+
+            {% if item.status == 'pending' or item.status == 'rejected' %}
+            <form method="post" action="{% url 'scrapers:approve' item.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit">Approve</button>
+            </form>
+            {% endif %}
+
+            {% if item.status == 'pending' or item.status == 'approved' %}
+            <form method="post" action="{% url 'scrapers:reject' item.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit">Reject</button>
+            </form>
+            {% endif %}
+
+            {% if item.status == 'rejected' %}
+            <span style="font-size:0.75rem; color:#ef4444; font-weight:600; padding:0 8px;">Rejected</span>
+            {% elif item.status == 'approved' %}
+            <span style="font-size:0.75rem; color:#10b981; font-weight:600; padding:0 8px;">Approved</span>
+            {% endif %}
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding:2.5rem; color:var(--muted);">
+            🎉 No pending scraped grants to review. All caught up!
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    {# ── Pagination ── #}
+    <div class="table-foot">
+      <span class="helptext">
+        {% if page_obj.paginator.count > 0 %}
+          Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total_count }}
+        {% endif %}
+      </span>
+      <div>
+        {% if page_obj.has_previous %}
+          <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}">‹ Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?q={{ query }}&page={{ page_obj.next_page_number }}">Next ›</a>
+        {% endif %}
+      </div>
+    </div>
+
+  </main>
+</div>
+{% endblock %}

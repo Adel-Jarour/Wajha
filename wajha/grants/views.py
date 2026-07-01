@@ -7,6 +7,10 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import GrantOpportunity, GrantFieldOfStudy, GrantDegreeLevel, GrantCountry
 from .forms import GrantForm, GrantSearchForm
+try:
+    from scrapers.models import ScrapedGrant as _ScrapedGrant
+except ImportError:
+    _ScrapedGrant = None
 
 def save_grant_tags(grant, cleaned_data):
     grant.fields.all().delete()
@@ -196,10 +200,13 @@ def admin_grants(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    pending_count = _ScrapedGrant.objects.filter(status='pending').count() if _ScrapedGrant else 0
+
     context = {
         'page_obj': page_obj,
         'total_count': total,
         'query': query,
+        'pending_count': pending_count,
     }
     return render(request, 'grants/admin/grants_table.html', context)
 
