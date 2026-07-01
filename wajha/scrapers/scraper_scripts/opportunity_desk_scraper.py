@@ -19,7 +19,8 @@ HEADERS = {
 }
 
 # Regex to pull a deadline string like "Deadline: August 12, 2026" from text
-DEADLINE_RE = re.compile(r'[Dd]eadline[:\s]+([A-Za-z][\w\s,]+\d{4}|Unspecified)', re.IGNORECASE)
+DEADLINE_RE = re.compile(r'[Dd]eadline[:\s]+(.+)', re.IGNORECASE)
+DATE_RE = re.compile(r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+\d{4}', re.IGNORECASE)
 
 
 class OpportunityDeskScraper(BaseScraper):
@@ -72,10 +73,18 @@ class OpportunityDeskScraper(BaseScraper):
                 excerpt = excerpt_tag.get_text(strip=True) if excerpt_tag else ''
 
                 # ── Deadline (extracted from excerpt text) ────────────────────
-                deadline = 'Unspecified'
+                deadline = ''
                 match = DEADLINE_RE.search(excerpt)
                 if match:
-                    deadline = match.group(1).strip()
+                    raw_deadline_text = match.group(1).strip()
+                    # Look for a clean date like "August 12, 2026" inside that text
+                    date_match = DATE_RE.search(raw_deadline_text)
+                    if date_match:
+                        try:
+                            from dateutil.parser import parse
+                            deadline = parse(date_match.group(0)).strftime('%Y-%m-%d')
+                        except Exception:
+                            pass
 
                 # ── Published date ────────────────────────────────────────────
                 date_tag = article.select_one('time')
