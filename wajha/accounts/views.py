@@ -302,4 +302,3 @@ def delete_user_view(request, user_id):
     messages.success(request, f"User '{username}' and all associated data have been deleted.")
     return redirect('admin_users')
 
-

@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}Wajha — Find your direction{% endblock %}
 {% block content %}
 <section class="page active" id="page-landing">
@@ -14,23 +14,7 @@
                 class="bearing" style="transform:rotate(90deg) translateY(1px); color:#fff;"></span></button></a>
           <a href="{% url 'grants:search' %}" class="btn btn-ghost" style="text-decoration:none;">Browse all grants</a>
         </div>
-        <div>
-          <div class="predict-tag">We predict</div>
-          <div class="hero-stats">
-            <div class="stat">
-              <div class="num">1,240+</div>
-              <div class="label">verified grants</div>
-            </div>
-            <div class="stat">
-              <div class="num">38</div>
-              <div class="label">countries</div>
-            </div>
-            <div class="stat">
-              <div class="num">96%</div>
-              <div class="label">best-match accuracy*</div>
-            </div>
-          </div>
-        </div>
+       
       </div>
       <div class="compass-wrap">
         <div class="compass">
@@ -135,8 +119,12 @@
     <div class="deadline {% if g.is_urgent %}urgent{% endif %}">
       <i class="fa-regular fa-clock"></i> {{ g.days_until_deadline }} days left
     </div>
-    <button class="save-btn" type="button" data-grant-id="{{ g.id }}">Save +</button>
-  </div>
+    <button class="save-btn {% if g.id in saved_grant_ids %}saved{% endif %}" 
+        type="button" 
+        data-grant-id="{{ g.id }}">
+       {% if g.id in saved_grant_ids %}Saved ✓{% else %}Save +{% endif %}
+   </button> 
+   </div>
 </div>
 {% endfor %}
       </div>
