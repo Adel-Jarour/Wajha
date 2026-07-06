@@ -35,7 +35,7 @@
 
         {% if user.role == "admin" or user.is_staff %}
         <a href="{% url 'grants:admin_grants' %}">
-        <button>Admin</button>
+        <button type="button" {% if request.resolver_match.url_name == 'admin_grants' %}class="active"{% endif %}>Admin</button>
         </a>
       {% endif %}
 

@@ -73,9 +73,9 @@
           <input type="text" id="searchInput"
                  placeholder="Search by title or organization..."
                  autocomplete="off">
-          <span class="live-tag">
+          <!-- <span class="live-tag">
             <span class="live-dot"></span> Live
-          </span>
+          </span> -->
         </div>
       </div>
 
@@ -122,7 +122,7 @@
           <div class="lcard-right">
             {% with days=grant.days_until_deadline %}
               <div class="deadline {% if days <= 14 %}urgent{% elif days <= 30 %}urgent{% endif %}">
-                <span class="dot"></span>
+                <i class="fa-regular fa-clock"></i>
                  {{ days }} day{{ days|pluralize }} left
               </div>
             {% endwith %}
@@ -267,7 +267,7 @@
           </div>
           <div class="lcard-right">
             <div class="deadline ${urgent}">
-              <span class="dot"></span>  ${g.days_left} days left
+              <i class="fa-regular fa-clock"></i>  ${g.days_left} days left
             </div>
             <button class="save-btn" onclick="event.preventDefault();toggleSave(this,${g.id})">
               Save +
@@ -293,9 +293,12 @@
     }, 2800);
   }
 
-    /* ── Save ── */
-  const isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}" === 'true';
-
+  /* ── Save ── */
+function saveGrant(btn) {
+    const grantId = btn.dataset.grantId;
+    
+    const isAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}" === 'true';
+    
     if (!isAuthenticated) {
         window.location.href = "{% url 'login' %}";
         return;
@@ -310,15 +313,54 @@
     })
     .then(r => r.json())
     .then(data => {
-      if (data.saved) {
-        btn.classList.add('saved');
-        btn.textContent = 'Saved ';
-        showToast('Grant saved!');
-      } else {
-        btn.classList.remove('saved');
-        btn.textContent = 'Save +';
-        showToast('Removed from saved.');
-      }
+        if (data.saved) {
+            btn.classList.add('saved');
+            btn.textContent = 'Saved ✓';
+            showToast('Grant saved!');
+        } else {
+            btn.classList.remove('saved');
+            btn.textContent = 'Save +';
+            showToast('Removed from saved.');
+        }
+    })
+    .catch(() => {
+        showToast('Something went wrong.');
     });
+}
+
+/* ── Render ── */
+function renderResults(data) {
+    resultsCount.innerHTML = `<b>${data.count}</b> grant${data.count !== 1 ? 's' : ''} match — sorted by deadline`;
+
+    const cards = data.grants.map(g => {
+        const urgent = g.days_left <= 30 ? 'urgent' : '';
+        return `
+            <a href="${g.url}" class="lcard" style="text-decoration:none;color:inherit;">
+                <div class="lcard-thumb">${g.organization.slice(0,2).toUpperCase()}</div>
+                <div class="lcard-body">
+                    <h4>${g.title}</h4>
+                    <div class="meta">${g.organization}</div>
+                    <div class="lcard-tags">
+                        ${g.degree_levels.map(d => `<span class="pill pill-level">${d}</span>`).join('')}
+                        ${g.countries.map(c => `<span class="tag">${c}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="lcard-right">
+                    <div class="deadline ${urgent}">
+                        <i class="fa-regular fa-clock"></i> ${g.days_left} days left
+                    </div>
+                    <button class="save-btn" 
+                        type="button"
+                        data-grant-id="${g.id}"
+                        onclick="event.preventDefault(); saveGrant(this)">
+                        Save +
+                    </button>
+                </div>
+            </a>`;
+    }).join('');
+
+    resultsList.innerHTML = cards || '';
+    emptyState.style.display = data.count === 0 ? 'block' : 'none';
+}
 </script>
 {% endblock %}
