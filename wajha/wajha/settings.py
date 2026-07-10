@@ -177,6 +177,8 @@ AUTHENTICATION_BACKENDS = [
 # EMAIL_HOST_USER = 'your-email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'your-app-password'
 
+# Gemini Key
+GEMINI_API_KEY = config('GEMINI_API_KEY')
 
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='')

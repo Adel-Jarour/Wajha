@@ -71,12 +71,44 @@ def grant_detail(request, pk):
     )
     back_url = request.GET.get('back', request.META.get('HTTP_REFERER', '/grants/'))
 
+    # Auto-generate AI eligibility summary if not yet generated
+    if not grant.eligibility_summary or grant.eligibility_summary == 'No AI summary generated yet.':
+        try:
+            from ai_engine.services import AIService
+            AIService.generate_eligibility_summary(grant)
+            grant.refresh_from_db()
+        except Exception as e:
+            print(f"Auto-generate eligibility summary error: {e}")
+
+    import json
+    eligibility_dict = None
+    if grant.eligibility_summary and grant.eligibility_summary != 'No AI summary generated yet.':
+        try:
+            eligibility_dict = json.loads(grant.eligibility_summary)
+        except json.JSONDecodeError:
+            pass
+
+    personalized_eligibility = None
+    if request.user.is_authenticated:
+        cache_key = f'personalized_eligibility_{grant.pk}'
+        if cache_key in request.session:
+            personalized_eligibility = request.session[cache_key]
+        else:
+            try:
+                from ai_engine.services import AIService
+                personalized_eligibility = AIService.generate_personalized_eligibility(grant, request.user)
+                if personalized_eligibility:
+                    request.session[cache_key] = personalized_eligibility
+            except Exception as e:
+                print(f"Personalized eligibility error: {e}")
 
     context = {
         'grant': grant,
         'days_left': grant.days_until_deadline(),
         'is_urgent': grant.is_urgent(),
         'back_url': back_url,
+        'eligibility_dict': eligibility_dict,
+        'personalized_eligibility': personalized_eligibility,
     }
     return render(request, 'grants/detail.html', context)
 

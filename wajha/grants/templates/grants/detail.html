@@ -14,7 +14,7 @@
         Back to results
     </a>
 
-    <div style="display:grid; grid-template-columns: 1fr 320px; gap:2rem; align-items:start;">
+    <div style="display:grid; grid-template-columns: 1fr 340px; gap:3rem; align-items:start;">
 
         <!-- -------------------------------------------------------- -->
         <!-- Left: Main Content -->
@@ -24,48 +24,92 @@
             <!-- Tags -->
             <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
                 {% for degree in grant.degree_levels.all %}
-                    <span class="pill pill-level">{{ degree.get_degree_display|upper }}</span>
+                    <span class="pill" style="background:#e0e7ff; color:#3b82f6;">{{ degree.get_degree_display|upper }}</span>
                 {% endfor %}
-                <span class="pill" style="background:var(--green-dim); color:var(--green);">
+                <span class="pill" style="background:#dcfce7; color:#16a34a;">
                     {{ grant.get_funding_type_display|upper }}
                 </span>
             </div>
 
             <!-- Title -->
-            <h1 style="font-size:2rem; font-weight:700; margin-bottom:0.5rem;">
+            <h1 style="font-size:2.2rem; font-weight:800; color:#1e3a8a; margin-bottom:0.5rem; font-family:var(--display);">
                 {{ grant.title }}
             </h1>
 
             <!-- Organization -->
-            <div style="color:var(--fg-faint); margin-bottom:2rem;">
+            <div style="color:#6b7280; font-size:1.1rem; margin-bottom:2.5rem;">
                 {{ grant.organization }}
                 {% for country in grant.countries.all %}
-                    · {{ country.country_name }}
+                    — {{ country.country_name }}
                 {% endfor %}
             </div>
 
             <!-- ------------------------------------------------ -->
             <!-- AI Eligibility Box -->
             <!-- ------------------------------------------------ -->
-            {% if grant.eligibility_summary %}
-            <div style="background:var(--indigo-dim); border:1px solid var(--indigo); border-radius:14px; padding:1.5rem; margin-bottom:2rem;">
-                <div style="display:inline-flex; align-items:center; gap:0.4rem; background:var(--indigo); color:#fff; padding:0.2rem 0.6rem; border-radius:6px; font-size:0.8rem; margin-bottom:1rem;">
+            <div id="ai-eligibility-box" style="background:#f8fafc; border:1px solid #e0e7ff; border-radius:16px; padding:1.5rem; margin-bottom:2.5rem;">
+                <div style="display:inline-flex; align-items:center; gap:0.4rem; background:#e0e7ff; color:#3b82f6; padding:0.3rem 0.8rem; border-radius:9999px; font-size:0.75rem; font-weight:700; margin-bottom:1.5rem; font-family:var(--mono);">
                     ✦ AI eligibility, simplified
                 </div>
-                <div style="color:var(--fg); line-height:1.7;">
-                    {{ grant.eligibility_summary|linebreaks }}
+                <div style="color:#1e3a8a; line-height:1.7;">
+                    {% if personalized_eligibility %}
+                        <ul style="list-style:none; padding:0; margin:0; font-size:0.95rem;">
+                            {% for item in personalized_eligibility %}
+                            <li style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:start;">
+                                {% if item.is_met is True %}
+                                    <span style="color:#10b981; font-weight:bold;">✓</span> 
+                                {% elif item.is_met is False %}
+                                    <span style="color:#ef4444; font-weight:bold;">✗</span>
+                                {% else %}
+                                    <span style="color:#9ca3af; font-size:0.8rem; margin-top:0.3rem;">○</span> 
+                                {% endif %}
+                                <span>{{ item.requirement }} — <strong>{{ item.user_status }}</strong></span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% elif eligibility_dict %}
+                        <ul style="list-style:none; padding:0; margin:0; font-size:0.95rem;">
+                            {% if eligibility_dict.academic_level %}
+                            <li style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:start;">
+                                <span style="color:#10b981; font-weight:bold;">✓</span> 
+                                <span>{{ eligibility_dict.academic_level }}</span>
+                            </li>
+                            {% endif %}
+                            {% if eligibility_dict.gpa %}
+                            <li style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:start;">
+                                <span style="color:#10b981; font-weight:bold;">✓</span> 
+                                <span>{{ eligibility_dict.gpa }}</span>
+                            </li>
+                            {% endif %}
+                            {% if eligibility_dict.language %}
+                            <li style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:start;">
+                                <span style="color:#10b981; font-weight:bold;">✓</span> 
+                                <span>{{ eligibility_dict.language }}</span>
+                            </li>
+                            {% endif %}
+                            {% for req in eligibility_dict.key_requirements %}
+                            <li style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:start;">
+                                <span style="color:#9ca3af; font-size:0.8rem; margin-top:0.3rem;">○</span> 
+                                <span>{{ req }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% elif grant.eligibility_summary and grant.eligibility_summary != 'No AI summary generated yet.' %}
+                        {{ grant.eligibility_summary|linebreaks }}
+                    {% else %}
+                        <p style="color:#6b7280;">Summary could not be generated at this time.</p>
+                    {% endif %}
                 </div>
-                <div style="color:var(--fg-faint); font-size:0.8rem; margin-top:1rem;">
+                <div style="color:#9ca3af; font-size:0.8rem; margin-top:1.5rem;">
                     Generated from the official eligibility page · also available in العربية
                 </div>
             </div>
-            {% endif %}
 
             <!-- ------------------------------------------------ -->
             <!-- About this grant -->
             <!-- ------------------------------------------------ -->
             <div style="margin-bottom:2rem;">
-                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:0.75rem;">
+                <h2 style="font-size:1.1rem; font-weight:700; color:#1e3a8a; margin-bottom:0.75rem;">
                     About this grant
                 </h2>
                 <div style="color:var(--fg); line-height:1.7;">
@@ -77,7 +121,7 @@
             <!-- Eligibility Criteria -->
             <!-- ------------------------------------------------ -->
             <div style="margin-bottom:2rem;">
-                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:0.75rem;">
+                <h2 style="font-size:1.1rem; font-weight:700; color:#1e3a8a; margin-bottom:0.75rem;">
                     Eligibility criteria
                 </h2>
                 <div style="color:var(--fg); line-height:1.7;">
@@ -89,15 +133,15 @@
             <!-- Tags -->
             <!-- ------------------------------------------------ -->
             <div style="margin-bottom:2rem;">
-                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:0.75rem;">
+                <h2 style="font-size:1.1rem; font-weight:700; color:#1e3a8a; margin-bottom:0.75rem;">
                     Tags
                 </h2>
                 <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                     {% for field in grant.fields.all %}
-                        <span class="tag">{{ field.field_name }}</span>
+                        <span class="tag" style="background:#f1f5f9; color:#475569; border:none; padding:0.4rem 0.8rem;">{{ field.field_name }}</span>
                     {% endfor %}
                     {% for country in grant.countries.all %}
-                        <span class="tag">Open to {{ country.country_name }}</span>
+                        <span class="tag" style="background:#f1f5f9; color:#475569; border:none; padding:0.4rem 0.8rem;">Open to {{ country.country_name }}</span>
                     {% endfor %}
                 </div>
             </div>
@@ -107,45 +151,47 @@
         <!-- -------------------------------------------------------- -->
         <!-- Right: Sidebar -->
         <!-- -------------------------------------------------------- -->
-        <div style="position:sticky; top:80px;">
-            <div style="border:1px solid var(--line); border-radius:16px; padding:1.5rem;">
+        <div style="position:sticky; top:100px;">
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
 
                 <!-- Deadline -->
-                <div style="text-align:center; margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--line);">
-                    <div class="eyebrow" style="margin-bottom:0.5rem;">DEADLINE</div>
-                    <div style="font-size:1.5rem; font-weight:700; color:var(--fg);">
+                <div style="text-align:center; margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid #f1f5f9;">
+                    <div style="font-family:var(--mono); font-size:0.75rem; letter-spacing:0.1em; color:#9ca3af; text-transform:uppercase; margin-bottom:0.5rem;">
+                        DEADLINE
+                    </div>
+                    <div style="font-size:1.75rem; font-weight:800; color:#1e3a8a;">
                         {{ grant.deadline|date:"d M Y" }}
                     </div>
-                    <div class="deadline {% if is_urgent %}urgent{% endif %}" style="justify-content:center; margin-top:0.4rem;">
-                         {{ days_left }} days left
+                    <div style="color:#f59e0b; font-weight:600; font-size:0.9rem; justify-content:center; margin-top:0.4rem; display:flex; align-items:center; gap:0.4rem;">
+                        <span>⏳</span> {{ days_left }} days left
                     </div>
                 </div>
 
                 <!-- Grant Info -->
-                <div style="margin-bottom:1.5rem;">
-                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--line);">
-                        <span style="color:var(--fg-faint);">Funding</span>
-                        <span style="font-weight:600;">{{ grant.get_funding_type_display }}</span>
+                <div style="margin-bottom:2rem;">
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="color:#9ca3af; font-size:0.9rem;">Funding</span>
+                        <span style="font-weight:600; color:#1e3a8a; font-size:0.9rem;">{{ grant.get_funding_type_display }}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--line);">
-                        <span style="color:var(--fg-faint);">Level</span>
-                        <span style="font-weight:600;">
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="color:#9ca3af; font-size:0.9rem;">Level</span>
+                        <span style="font-weight:600; color:#1e3a8a; font-size:0.9rem; text-align:right;">
                             {% for d in grant.degree_levels.all %}
                                 {{ d.get_degree_display }}{% if not forloop.last %}, {% endif %}
                             {% endfor %}
                         </span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--line);">
-                        <span style="color:var(--fg-faint);">Countries</span>
-                        <span style="font-weight:600;">
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="color:#9ca3af; font-size:0.9rem;">Countries</span>
+                        <span style="font-weight:600; color:#1e3a8a; font-size:0.9rem; text-align:right;">
                             {% for c in grant.countries.all %}
                                 {{ c.country_name }}{% if not forloop.last %}, {% endif %}
                             {% endfor %}
                         </span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0;">
-                        <span style="color:var(--fg-faint);">Fields</span>
-                        <span style="font-weight:600; text-align:right;">
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0;">
+                        <span style="color:#9ca3af; font-size:0.9rem;">Fields</span>
+                        <span style="font-weight:600; color:#1e3a8a; font-size:0.9rem; text-align:right;">
                             {% for f in grant.fields.all %}
                                 {{ f.field_name }}{% if not forloop.last %}, {% endif %}
                             {% endfor %}
@@ -155,29 +201,29 @@
 
                 <!-- Action Buttons -->
                 {% if user.is_authenticated %}
-                    <button class="btn btn-primary" 
-                        style="width:100%; margin-bottom:0.75rem;" 
+                    <button class="btn" 
+                        style="width:100%; margin-bottom:0.75rem; background:#f59e0b; color:white; border-radius:8px; font-weight:600; justify-content:center; padding:0.8rem; display:inline-flex; align-items:center; gap:0.5rem;" 
                         data-grant-id="{{ grant.pk }}"
-                        onclick="saveGrant(this)">
-                        Save & track
+                        onclick="saveGrant({{ grant.pk }}, this)">
+                        Save & track &rarr;
                     </button>
                     <a href="/assistant/?grant={{ grant.pk }}" style="text-decoration:none;">
-                        <button class="btn btn-ghost" style="width:100%; margin-bottom:0.75rem;">
-                            Draft my application
+                        <button class="btn" style="width:100%; margin-bottom:1rem; background:#e0e7ff; color:#1e3a8a; border-radius:8px; font-weight:600; justify-content:center; padding:0.8rem; display:inline-flex; align-items:center; gap:0.5rem;">
+                            ✦ Draft my application
                         </button>
                     </a>
                 {% else %}
                     <a href="{% url 'login' %}" style="text-decoration:none;">
-                        <button class="btn btn-primary" style="width:100%; margin-bottom:0.75rem;">
-                            Sign in to save & track
+                        <button class="btn" style="width:100%; margin-bottom:1rem; background:#f59e0b; color:white; border-radius:8px; font-weight:600; justify-content:center; padding:0.8rem; display:inline-flex; align-items:center; gap:0.5rem;">
+                            Sign in to save & track &rarr;
                         </button>
                     </a>
                 {% endif %}
 
                 <!-- Visit Source -->
                 <div style="text-align:center;">
-                    <a href="{{ grant.source_url }}" target="_blank" style="color:var(--fg-faint); font-size:0.85rem; text-decoration:none;">
-                        Visit official source 
+                    <a href="{{ grant.source_url }}" target="_blank" style="color:#9ca3af; font-size:0.85rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.2rem;">
+                        Visit official source <span style="font-size:0.7rem;">&#8599;</span>
                     </a>
                 </div>
 

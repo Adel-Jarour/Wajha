@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Assistant — Wajha{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom CSS for the Assistant Page */
+    .assistant-container {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 1.5rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        font-family: system-ui, -apple-system, sans-serif;
+    }
+    .panel {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    /* Left Panel Styles */
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: #eef2ff;
+        color: #6366f1;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        margin-bottom: 1rem;
+    }
+    .text-faint {
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+    .data-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.6rem;
+        font-size: 0.875rem;
+    }
+    .data-label {
+        color: #9ca3af;
+    }
+    .data-value {
+        color: #1e3a8a;
+        font-weight: 600;
+        text-align: right;
+    }
+    .data-value.success {
+        color: #10b981;
+    }
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 1.5rem 0 0.75rem 0;
+    }
+    .tone-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .btn-tone {
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        color: #1e3a8a;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-tone:hover {
+        background: #f8fafc;
+    }
+    .btn-tone.active {
+        background: #1e3a8a;
+        color: #ffffff;
+        border-color: #1e3a8a;
+    }
+    .focus-input {
+        width: 100%;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #374151;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        box-sizing: border-box;
+    }
+    .focus-input::placeholder {
+        color: #9ca3af;
+    }
+    .focus-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        background: #ffffff;
+    }
+    .btn-generate {
+        width: 100%;
+        background: #f59e0b;
+        color: white;
+        border: none;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        cursor: pointer;
+        margin-bottom: 0.75rem;
+        transition: background 0.2s;
+    }
+    .btn-generate:hover {
+        background: #d97706;
+    }
+    .btn-review {
+        width: 100%;
+        background: #f1f5f9;
+        color: #1e3a8a;
+        border: none;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-review:hover {
+        background: #e2e8f0;
+    }
+
+    /* Right Panel Styles */
+    .right-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 1.5rem;
+    }
+    .right-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        max-width: 60%;
+        line-height: 1.4;
+    }
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s;
+    }
+    .btn-action.secondary {
+        background: #f1f5f9;
+        color: #1e3a8a;
+    }
+    .btn-action.secondary:hover {
+        background: #e2e8f0;
+    }
+    .btn-action.primary {
+        background: #1e3a8a;
+        color: #ffffff;
+    }
+    .btn-action.primary:hover {
+        background: #1e40af;
+    }
+    .draft-content {
+        font-size: 1rem;
+        color: #1e3a8a;
+        line-height: 1.6;
+        flex-grow: 1;
+    }
+    .skeleton-line {
+        height: 0.75rem;
+        background: #e0e7ff;
+        border-radius: 9999px;
+        margin-bottom: 0.75rem;
+    }
+    .draft-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 2rem;
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .assistant-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="shell">
+    <div class="assistant-container">
+        
+        <!-- Left Panel -->
+        <div class="panel">
+            <div class="ai-badge">✦ AI Assistant</div>
+            <div class="text-faint" style="margin-bottom:1.5rem;">Pulling from your profile</div>
+            
+            <div style="margin-bottom:1.5rem;">
+                <div class="data-row">
+                    <span class="data-label">CV</span>
+                    <span class="data-value success">uploaded ✓</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Field</span>
+                    <span class="data-value">Computer Science</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">GPA</span>
+                    <span class="data-value">3.6</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Experience</span>
+                    <span class="data-value">Startup founder</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Grant</span>
+                    <span class="data-value">DAAD (eligibility loaded)</span>
+                </div>
+            </div>
+
+            <div class="section-title">TONE</div>
+            <div class="tone-buttons">
+                <button class="btn-tone active">Formal</button>
+                <button class="btn-tone">Personal</button>
+                <button class="btn-tone">Concise</button>
+            </div>
+
+            <div class="section-title">ADD A FOCUS</div>
+            <input type="text" class="focus-input" placeholder="e.g. emphasize my open-source wo">
+
+            <button class="btn-generate">✦ Generate draft</button>
+            <button class="btn-review">Review my CV instead</button>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="panel" style="display:flex; flex-direction:column;">
+            <div class="right-header">
+                <div class="right-title">Motivation letter — draft for DAAD Study Scholarship</div>
+                <div class="header-actions">
+                    <button class="btn-action secondary">↺ Regenerate</button>
+                    <button class="btn-action secondary">Copy</button>
+                    <button class="btn-action primary">Save to grant</button>
+                </div>
+            </div>
+
+            <div class="draft-content">
+                <div style="margin-bottom:1.5rem; font-weight:600;">Dear DAAD Selection Committee,</div>
+                
+                <!-- Skeleton loader mimicking generated text lines -->
+                <div class="skeleton-line" style="width: 100%;"></div>
+                <div class="skeleton-line" style="width: 90%;"></div>
+                <div class="skeleton-line" style="width: 95%;"></div>
+                <div class="skeleton-line" style="width: 82%;"></div>
+                <div class="skeleton-line" style="width: 88%;"></div>
+                <div class="skeleton-line" style="width: 60%;"></div>
+                <div class="skeleton-line" style="width: 85%;"></div>
+                <div class="skeleton-line" style="width: 75%;"></div>
+            </div>
+
+            <div class="draft-footer">
+                ✦ Highlighted lines pulled from your profile — edit freely. You're always the author.
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
