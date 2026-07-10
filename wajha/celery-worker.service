@@ -1,0 +1,34 @@
+[Unit]
+Description=Wajha – Celery Worker
+After=network.target redis.service
+
+[Service]
+Type=forking
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/team-project/wajha
+
+# Activate your virtual environment before running
+Environment="PATH=/home/ubuntu/venv/bin"
+EnvironmentFile=/home/ubuntu/team-project/wajha/.env
+
+ExecStart=/home/ubuntu/venv/bin/celery \
+    -A wajha worker \
+    --loglevel=info \
+    --logfile=/var/log/celery/worker.log \
+    --pidfile=/run/celery/worker.pid \
+    --detach
+
+ExecStop=/home/ubuntu/venv/bin/celery multi stopwait worker \
+    --pidfile=/run/celery/worker.pid
+
+ExecReload=/bin/kill -s HUP $MAINPID
+
+RuntimeDirectory=celery
+LogsDirectory=celery
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

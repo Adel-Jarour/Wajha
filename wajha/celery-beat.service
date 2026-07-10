@@ -1,0 +1,28 @@
+[Unit]
+Description=Wajha – Celery Beat Scheduler
+After=network.target redis.service celery-worker.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/team-project/wajha
+
+Environment="PATH=/home/ubuntu/venv/bin"
+EnvironmentFile=/home/ubuntu/team-project/wajha/.env
+
+# --schedule stores the last-run state; keep it outside the repo
+ExecStart=/home/ubuntu/venv/bin/celery \
+    -A wajha beat \
+    --loglevel=info \
+    --logfile=/var/log/celery/beat.log \
+    --schedule=/var/run/celery/celerybeat-schedule
+
+RuntimeDirectory=celery
+LogsDirectory=celery
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
