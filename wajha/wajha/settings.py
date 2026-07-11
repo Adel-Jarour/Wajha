@@ -199,16 +199,16 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Wajha <no-reply@wajha
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': config('GOOGLE_CLIENT_ID'),
-            'secret': config('GOOGLE_CLIENT_SECRET'),
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_CLIENT_SECRET', default=''),
             'key': ''
         },
         'SCOPE': ['profile', 'email'],
     },
        'github': {
         'APP': {
-            'client_id': config('GITHUB_CLIENT_ID'),
-            'secret': config('GITHUB_CLIENT_SECRET'),
+            'client_id': config('GITHUB_CLIENT_ID', default=''),
+            'secret': config('GITHUB_CLIENT_SECRET', default=''),
             'key': ''
         },
         'SCOPE': ['user:email'],
@@ -222,3 +222,6 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_AUTO_SIGNUP = True 
+
+# Gemini Key
+GEMINI_API_KEY = config('GEMINI_API_KEY')
